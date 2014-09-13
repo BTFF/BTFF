@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head>
+	<meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">
+	<title>B Tree First Fit malloc() Algorithm</title>
+	<meta name="GENERATOR" content="LibreOffice 3.5  (Linux)">
+	<meta name="AUTHOR" content="Young Song">
+	<meta name="CREATED" content="20140318;13271800">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="CHANGED" content="20140318;18223800">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="CHANGEDBY" content="Young Song">
+	<meta name="description" content="B Tree First Fit malloc() Algorithm">
+	<style type="text/css">
+	<!--
+		@page { size: landscape; margin: 0.79in }
+		P { margin-bottom: 0.08in }
+	-->
+	</style>
+<script src="B%20Tree%20First%20Fit%20malloc%28%29%20Algorithm_files/analytics.js" async=""></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-49237260-1', 'btff.us');
+  ga('send', 'pageview');
+
+</script></head>
+
+<body dir="LTR" lang="en-US">
+<p style="margin-bottom: 0in"><font style="font-size: 20pt" size="5"><b>B
+Tree First-Fit Memory Allocator</b></font></p>
+<p style="margin-bottom: 0in">by Young H. Song</p>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b>BTFF
+Features</b></font></p>
+<ul>
+	<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">O(log
+	n) time with First-Fit behavior, as n is the number of allocated &amp;
+	free blocks.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">No
+	boundary tag.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">Separation
+	between payload and bookkeeping meta data.</font></p>
+	<ul>
+		<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">It
+		does not use any free payload area.</font></p>
+		</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">As
+		of v1.0, payloads are located in data segment area which is
+		acquired by brk(), and bookkeeping meta data are located in
+		separated area which is acquired by mmap().</font></p>
+	</li></ul>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">Small
+	bookkeeping meta data overhead.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">Applicable
+	to any kind of resource allocation.</font></p>
+	<ul>
+		<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">Memory,
+		Disk, File, ...</font></p>
+	</li></ul>
+</li></ul>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b>BTFF
+Algorithms</b></font></p>
+<ul>
+	<li><p style="margin-bottom: 0in">B Tree Structure<br><img src="B%20Tree%20First%20Fit%20malloc%28%29%20Algorithm_files/algorithms.png" name="graphics5" align="BOTTOM" border="0" width="50%"></p>
+	<ul>
+		<li><p style="margin-bottom: 0in">All allocated or free block data
+		are sorted by the primary key which is address.</p>
+		</li><li><p style="margin-bottom: 0in">free() and realloc() uses address
+		as a key to locate a block.</p>
+		</li><li><p style="margin-bottom: 0in">malloc() uses available size to
+		search First Fit free block.</p>
+		</li><li><p style="margin-bottom: 0in">Available sizes are the biggest
+		available size of corresponding sub tree.</p>
+		</li><li><p style="margin-bottom: 0in">If a block in a node is free, its
+		available size is bigger than 0.</p>
+		</li><li><p style="margin-bottom: 0in">Available sizes are maintained in
+		case of any update, split or merge.</p>
+		</li><li><p style="margin-bottom: 0in">Coalescing or splitting is based
+		on standard B Tree operation.</p>
+	</li></ul>
+	</li><li><p style="margin-bottom: 0in">Leaf<br><img src="B%20Tree%20First%20Fit%20malloc%28%29%20Algorithm_files/leaf.png" name="graphics6" align="BOTTOM" border="0" width="50%"></p>
+	<ul>
+		<li><p style="margin-bottom: 0in">B Tree allows a leaf to have
+		different structure from non-leaf nodes, because there is no
+		rotation in B Tree.</p>
+		</li><li><p style="margin-bottom: 0in">Leaf &amp; node size of 64 byte
+		is chosen based on cache memory behavior of 16 word, and linear
+		search is used within leaf or node.</p>
+		</li><li><p style="margin-bottom: 0in">Each block’s address can be
+		calculated from the starting address of the leaf and sizes of
+		blocks.</p>
+		</li><li><p style="margin-bottom: 0in">A block’s size is variable
+		format which can be from 1 byte to 5 bytes, meaning that smaller
+		payload has smaller bookkeeping meta data overhead. However, the
+		bigger payload is, the smaller the ratio of bookkeeping meta data
+		to payload is.</p>
+	</li></ul>
+	</li><li><p style="margin-bottom: 0in">More details of algorithms.</p>
+	<ul>
+		<li><p style="margin-bottom: 0in">Coming soon.</p>
+	</li></ul>
+</li></ul>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b><br><br>Releases</b></font></p>
+<ul>
+	<li><p style="margin-bottom: 0in"><font size="3"><span style="font-weight: normal">v1.0
+	<a href="http://btff.us/btff_v1_0.tgz">btff_v1_0.tgz</a></span></font></p>
+	<ul>
+		<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">3/18/2014</font></p>
+		<ul>
+			<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">09f98ae3cb90d90214999295b157bd33fd62666c7a547d47e977b4d291957a84<br><img src="B%20Tree%20First%20Fit%20malloc%28%29%20Algorithm_files/checksum.jpg" name="graphics1" align="BOTTOM" border="0" height="463" width="724"></font></p>
+		</li></ul>
+		</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">known
+		limitations</font></p>
+		<ul>
+			<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">32
+			bit only.</font></p>
+			</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">tested
+			only on Ubuntu 12.04.4 LTS.</font></p>
+			</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">memalign()
+			always uses the end of data segment.</font></p>
+			</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">mallopt(),
+			malloc_trim(), malloc_usable_size(), malloc_stats(),
+			malloc_get_state(), malloc_set_state() are not implemented.</font></p>
+			</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">8
+			byte aligned, because of glib-2.0 compatibility.</font></p>
+		</li></ul>
+	</li></ul>
+</li></ul>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b>License
+of the software </b></font>
+</p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b><br></b><font face="Liberation Mono, monospace"><font size="2"><span style="font-weight: normal">Copyright
+(c) 2014, Young H. Song song@youngho.net </span></font></font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">All
+rights reserved. </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">Redistribution
+and use in source and binary forms, with or without </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">modification,
+are permitted provided that the following conditions are met: </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">1.
+Redistributions of source code must retain the above copyright </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">notice,
+this list of conditions and the following disclaimer. </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">2.
+Redistributions in binary form must reproduce the above copyright </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">notice,
+this list of conditions and the following disclaimer in the </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">documentation
+and/or other materials provided with the distribution. </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">3.
+All advertising materials mentioning features or use of this software
+</font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">must
+display the following acknowledgement: </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">This
+product includes software developed by the Young H. Song. </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">4.
+Neither the name of the Young H. Song nor the </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">names
+of its contributors may be used to endorse or promote products </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">derived
+from this software without specific prior written permission. </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">THIS
+SOFTWARE IS PROVIDED BY Young H. Song ''AS IS'' AND ANY </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">EXPRESS
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">DISCLAIMED.
+IN NO EVENT SHALL Young H. Song BE LIABLE FOR ANY </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">(INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+AND </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">(INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS </font></font>
+</p>
+<p style="margin-bottom: 0in; font-weight: normal"><font face="Liberation Mono, monospace"><font size="2">SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</font></font></p>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b>How
+to try BTFF</b></font></p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b><br><img src="B%20Tree%20First%20Fit%20malloc%28%29%20Algorithm_files/how_to_try_0.jpg" name="graphics2" align="BOTTOM" border="0" height="463" width="724"><br><br><img src="B%20Tree%20First%20Fit%20malloc%28%29%20Algorithm_files/how_to_try_1.jpg" name="graphics3" align="BOTTOM" border="0" height="463" width="724"><br><br><img src="B%20Tree%20First%20Fit%20malloc%28%29%20Algorithm_files/how_to_try_2.jpg" name="graphics4" align="BOTTOM" border="0" height="463" width="724"></b></font></p>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b>Future
+Work</b></font></p>
+<ul>
+	<li><p style="margin-bottom: 0in; font-weight: normal"><font style="font-size: 13pt" size="3">memalign()
+	in the middle of data segment.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">mallopt(),
+	malloc_trim(), malloc_usable_size(), malloc_stats(),
+	malloc_get_state(), malloc_set_state()</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">alignment
+	setting.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">Option
+	of mmap() for payload and brk() for bookeeping meta data.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">etc...</font></p>
+</li></ul>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b><br><br>Contact</b></font></p>
+<p style="margin-bottom: 0in"><font size="3"><span style="font-weight: normal">Please
+contact me via <a href="mailto:song@youngho.net">song@youngho.net</a>,
+if you </span></font>
+</p>
+<ul>
+	<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">need
+	to report any bug.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">need
+	any other form of license.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">need
+	to port BTFF to other platform.</font></p>
+	<ul>
+		<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">Such
+		as 64 bit, customized OS, etc...</font></p>
+	</li></ul>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">need
+	consulting service related to BTFF.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">need
+	to apply BTFF algorithm to other resource management.</font></p>
+	</li><li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">etc...</font></p>
+</li></ul>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><font style="font-size: 15pt" size="4"><b>References</b></font></p>
+<ul>
+	<li><p style="margin-bottom: 0in; font-weight: normal"><font size="3">Bayer,
+	Rudolf; McCreight, E. (July 1970), Organization and Maintenance of
+	Large Ordered Indices, Mathematical and Information Sciences Report
+	No. 20, Boeing Scientific Research Laboratories.</font></p>
+	</li><li><p>Donald E. Knuth (April 1997), 2.5. DYNAMIC STORAGE
+	ALLOCATION, The Art of Computer Programming Volume 1 Fundamental
+	Algorithms Third Edition, Addison Wesley</p>
+</li></ul>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in"><br>
+</p>
+<p style="margin-bottom: 0in">Copyright <font face="Liberation Serif, serif">©</font>
+<font face="Liberation Serif, serif">2014, Young H. Song
+<a href="mailto:song@youngho.net">song@youngho.net</a></font></p>
+<p style="margin-bottom: 0in"><font face="Liberation Serif, serif">All
+rights reserved.</font></p>
+
+
+</body></html>
